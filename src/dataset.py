@@ -3,8 +3,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, Any
 
+import cv2
+import numpy as np
 import torch
-from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, ToTensor
 
@@ -92,7 +93,17 @@ class LineCharacterDataset(Dataset):
         transcriptionEncoding = self.encoder.encode(transcription)
         transcriptionEncoding = torch.tensor(transcriptionEncoding)
 
-        lineImage = Image.open(self.imageDir / lineData["filename"]).convert("RGB")
+        # Use OpenCV to read and process the image
+        img_path = str(self.imageDir / lineData["filename"])
+        lineImage = cv2.imread(img_path)
+        if lineImage is None:
+            raise FileNotFoundError(f"Image not found: {img_path}")
+        
+        # Convert BGR to RGB
+        lineImage = cv2.cvtColor(lineImage, cv2.COLOR_BGR2RGB)
+
+        # Convert to a tensor
+        lineImage = torch.tensor(lineImage).permute(2, 0, 1).float() / 255.0
 
         if self.imageTransforms:
             lineImage = self.imageTransforms(lineImage)
