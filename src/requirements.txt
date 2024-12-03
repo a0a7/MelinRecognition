@@ -1,2 +1,7 @@
+torch
 torchvision
-# virus
+torchmetrics
+numpy
+
+# python3.11 -m pip install -r src/requirements.txt
+# python3.11 -m src
