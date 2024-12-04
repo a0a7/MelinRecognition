@@ -1,17 +1,10 @@
-from math import ceil
-from typing import Tuple
-
+import cv2
 import numpy as np
+from typing import Tuple
+from math import ceil
 import torch
-import torch.nn.functional as F
-import torchvision.transforms.functional as tvF
-from PIL import Image
-from skimage.transform import rescale
-from torchvision.transforms import Resize
-
 
 class PadSequence(object):
-
     def __init__(self, length: int, padwith: int = 0):
         self.length = length
         self.padwith = padwith
@@ -24,23 +17,19 @@ class PadSequence(object):
         return F.pad(sequence, pad=(0, targetLength), mode="constant", value=self.padwith)
 
 
-class ResizeToHeight(Resize):
+class ResizeToHeight(object):
 
     def __init__(self, size: int):
-        super().__init__(size)
-        if isinstance(size, Tuple):
-            self.height = size[0]
-        else:
-            self.height = size
+        self.height = size
 
-    def forward(self, img:Image):
-        oldWidth, oldHeight = img.size
+    def forward(self, img: np.ndarray):
+        oldWidth, oldHeight = img.shape[1], img.shape[0]
         if oldHeight > oldWidth:
             scaleFactor = self.height / oldHeight
             intermediateWidth = ceil(oldWidth * scaleFactor)
-            return tvF.resize(img, [self.height, intermediateWidth], self.interpolation, self.max_size, self.antialias)
+            return cv2.resize(img, (intermediateWidth, self.height))
         else:
-            return super().forward(img)
+            return cv2.resize(img, (int(oldWidth * self.height / oldHeight), self.height))
 
 
 class ResizeAndPad(object):
@@ -54,8 +43,8 @@ class ResizeAndPad(object):
         self.height = height
         self.padwith = padwith
 
-    def __call__(self, img: Image):
-        oldWidth, oldHeight = img.size
+    def __call__(self, img: np.ndarray):
+        oldHeight, oldWidth = img.shape[:2]
         if oldWidth == self.width and oldHeight == self.height:
             return img
         else:
@@ -63,21 +52,23 @@ class ResizeAndPad(object):
             intermediateWidth = ceil(oldWidth * scaleFactor)
             if intermediateWidth > self.width:
                 intermediateWidth = self.width
-            resized = img.resize((intermediateWidth, self.height), resample=Image.BICUBIC) #Image.Resampling.BICUBIC
-            if img.mode == "RGB":
-                padValue = (self.padwith, self.padwith, self.padwith) # TODO: add option to pad with mean?! O.O
+            resized = cv2.resize(img, (intermediateWidth, self.height), interpolation=cv2.INTER_CUBIC)
+
+            # Padding if necessary
+            padWidth = self.width - resized.shape[1]
+            if padWidth > 0:
+                padded = np.full((self.height, self.width, 3), self.padwith, dtype=np.uint8)  # Pad with the specified value (e.g., 1 for black)
+                padded[:, :resized.shape[1]] = resized
+                return padded
             else:
-                padValue = self.padwith
-            preprocessed = Image.new(img.mode, (self.width, self.height), padValue)
-            preprocessed.paste(resized)
-            return preprocessed
+                return resized
 
     @classmethod
     def invert(cls, image: np.ndarray, targetShape: Tuple[int, int]) -> np.ndarray:
         # resize so that the height matches, then cut off at width ...
-        originalHeight, originalWidth = image.shape
+        originalHeight, originalWidth = image.shape[:2]
         scaleFactor = targetShape[0] / originalHeight
-        resized = rescale(image, scaleFactor)
+        resized = cv2.resize(image, (int(originalWidth * scaleFactor), targetShape[0]))
         return resized[:, :targetShape[1]]
 
     def __repr__(self) -> str:

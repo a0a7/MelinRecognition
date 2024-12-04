@@ -7,9 +7,9 @@ from torchvision.transforms import Compose, ToTensor, Grayscale
 
 from src import dataset
 from src.configuration import Configuration, ModelName, EncodingMethod, ModelState
-from src.models import CRNN, Flor, GRUCNN, CRNN2, GatedBN
-from src.utils.encoder import BaseEncoder, TranscriptionEncoder, VowelEncoder, NgramEncoder, CharacterShortformEncoder, \
-    SuffixEncoder, PhoneticEncoder, IpaEncoder, SuffixAndCharShortformEncoder, ShortformSymbolEncoder, MelinEncoder
+from src.models import Flor, GatedBN
+from src.utils.encoder import BaseEncoder, TranscriptionEncoder, NgramEncoder, CharacterShortformEncoder, \
+    SuffixEncoder, MelinEncoder
 from src.utils.transforms import PadSequence, ResizeAndPad, ResizeToHeight
 
 
