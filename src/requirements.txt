@@ -2,6 +2,9 @@ torch
 torchvision
 torchmetrics
 numpy
+opencv-python
+scikit-image
+git+https://github.com/ludvb/batchrenorm@master
 
-# python3.11 -m pip install -r src/requirements.txt
-# python3.11 -m src
+# pip3.7 install -r src/requirements.txt
+# python3.7 -m src
